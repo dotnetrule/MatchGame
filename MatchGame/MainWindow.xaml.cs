@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace MatchGame
 {
@@ -20,15 +21,31 @@ namespace MatchGame
     /// </summary>
     public partial class MainWindow : Window
     {
+        DispatcherTimer timer = new DispatcherTimer();
+        int tenthsofSecondsElapsed;
+        int matchesFound;
+
         public MainWindow()
         {
             InitializeComponent();
 
-            SetupGame();
+            timer.Interval = TimeSpan.FromSeconds(.1);
+            timer.Tick += Timer_Tick;
 
-            
+            SetupGame();
         }
 
+        private void Timer_Tick(object? sender, EventArgs e)
+        {
+            tenthsofSecondsElapsed++;
+            timeTextBlock.Text = (tenthsofSecondsElapsed / 10F).ToString("0.0S");
+
+            if (matchesFound == 8)
+            {
+                timer.Stop  ();
+                timeTextBlock.Text = timeTextBlock.Text + " - Play Again?";
+            }
+        }
 
         private void SetupGame()
         {
@@ -49,12 +66,19 @@ namespace MatchGame
 
             foreach (TextBlock textBlock in mainGrid.Children.OfType<TextBlock>())
             {
-                int index = random.Next(animalEmoji.Count);
-                string nextEmoji = animalEmoji[index];  
-                textBlock.Text = nextEmoji; 
-                animalEmoji.RemoveAt(index);
+                if (textBlock.Name != "timeTextBlock")
+                {
+                    textBlock.Visibility = Visibility.Visible;
+                    int index = random.Next(animalEmoji.Count);
+                    string nextEmoji = animalEmoji[index];
+                    textBlock.Text = nextEmoji;
+                    animalEmoji.RemoveAt(index);
+                }
             }
 
+            timer.Start();
+            tenthsofSecondsElapsed= 0;
+            matchesFound= 0;
         }
 
         bool findingMatch = false;
@@ -71,6 +95,7 @@ namespace MatchGame
             }
             else if(textBlock.Text == lastTextBoxClicked.Text)
             {
+                matchesFound++;
                 textBlock.Visibility = Visibility.Hidden;
                 findingMatch = false;
             }
@@ -79,6 +104,11 @@ namespace MatchGame
                 lastTextBoxClicked.Visibility = Visibility.Visible;
                 findingMatch = false;
             }
+        }
+
+        private void timeTextBlock_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            SetupGame();
         }
     }
 }
